@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-admin-deployment
+  labels:
+    app: pg-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pg-admin
+  template:
+    metadata:
+      labels:
+        app: pg-admin
+    spec:
+      containers:
+      - name: pg-admin
+        image: dpage/pgadmin4:6.17
+        ports:
+        - containerPort: 80
+        env:
+        - name: PGADMIN_DEFAULT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pg-admin-secrets
+              key: DB_PASSWORD
+        - name: PGADMIN_DEFAULT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: pg-admin-secrets
+              key: PG_USER_EMAIL
+        - name: PG_ADMIN_ENHANCED_COOKIE_PROTECTION
+          value: "False"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pg-admin-service
+spec:
+  type: NodePort # Allows external access to the service
+  selector:
+    app: pg-admin
+  ports:
+  - protocol: TCP
+    port: 80 # It can be any port you want to expose
+    targetPort: 80 # The port on which pg-admin is running in the container
+    nodePort: 30200 # The port on each node to expose the service
